@@ -1,14 +1,17 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment } from '@react-three/drei'
 
 export default function App() {
+  const controls = useRef()
+
   return (
     <Canvas>
-      <ambientLight intensity={0.5 * Math.PI} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[10, 10, 10]} />
       <Sphere scale={1.75} />
-      <OrbitControls />
-      <Environment preset="city" />
+      <OrbitControls ref={controls} enableRotate={true} />
+      <Environment preset="sunset" />
     </Canvas>
   )
 }
@@ -16,8 +19,8 @@ export default function App() {
 function Sphere(props) {
   return (
     <mesh {...props}>
-      <sphereGeometry args={[1, 32, 32]} />
-      <meshStandardMaterial color="grey" />
+      <sphereGeometry args={[1, 64, 64]} />
+      <meshStandardMaterial color="white" metalness={0.3} roughness={0.1} />
     </mesh>
   )
 }

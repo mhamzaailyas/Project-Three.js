@@ -1,5 +1,7 @@
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html,
@@ -7,11 +9,15 @@ body,
 #root {
   width: 100%;
   height: 100%;
-  margin: 0;
-  padding: 0;
   touch-action: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 body {
-  background: #645959;
+  background-image: url("../public/background-3d-illustration.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
