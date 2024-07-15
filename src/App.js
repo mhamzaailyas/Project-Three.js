@@ -13,39 +13,11 @@ export default function App() {
         <CameraControls />
         <Environment preset="sunset" />
       </Canvas>
-      <div className="scrollbar-container">
-        <div className="scrollbar-wrapper">
-          <label className="scrollbar-label">Horizontal Rotation</label>
-          <input
-            type="range"
-            className="scrollbar horizontal"
-            min="0"
-            max="360"
-            onChange={(e) => window.dispatchEvent(new CustomEvent('rotateHorizontal', { detail: e.target.value }))}
-          />
-        </div>
-        <div className="scrollbar-wrapper">
-          <label className="scrollbar-label">Vertical Rotation</label>
-          <input
-            type="range"
-            className="scrollbar vertical"
-            min="0"
-            max="360"
-            onChange={(e) => window.dispatchEvent(new CustomEvent('rotateVertical', { detail: e.target.value }))}
-          />
-        </div>
-        <div className="scrollbar-wrapper">
-          <label className="scrollbar-label">Zoom</label>
-          <input
-            type="range"
-            className="scrollbar zoom"
-            min="1"
-            max="10"
-            step="0.1"
-            defaultValue="1"
-            onChange={(e) => window.dispatchEvent(new CustomEvent('zoom', { detail: parseFloat(e.target.value) }))}
-          />
-        </div>
+      <div className="button-container">
+        <button className="rotate-button" onMouseDown={() => window.dispatchEvent(new CustomEvent('startRotate', { detail: 'left' }))} onMouseUp={() => window.dispatchEvent(new CustomEvent('stopRotate'))}>Rotate Left</button>
+        <button className="rotate-button" onMouseDown={() => window.dispatchEvent(new CustomEvent('startRotate', { detail: 'right' }))} onMouseUp={() => window.dispatchEvent(new CustomEvent('stopRotate'))}>Rotate Right</button>
+        <button className="rotate-button" onMouseDown={() => window.dispatchEvent(new CustomEvent('startRotateMouse'))} onMouseUp={() => window.dispatchEvent(new CustomEvent('stopRotateMouse'))}>Mouse Rotate</button>
+        <button className="rotate-button" onMouseDown={() => window.dispatchEvent(new CustomEvent('startRotateUp'))} onMouseUp={() => window.dispatchEvent(new CustomEvent('stopRotateUp'))}>Mouse Up</button>
       </div>
     </div>
   );
@@ -64,41 +36,49 @@ function CameraControls() {
   const { camera, gl } = useThree();
   const controlsRef = useRef();
 
-  const handleRotateHorizontal = useCallback((event) => {
-    const value = event.detail;
-    const radians = (value / 180) * Math.PI;
-    if (controlsRef.current) {
-      controlsRef.current.setAzimuthalAngle(radians);
-      controlsRef.current.update();
-    }
+  const handleStartRotate = useCallback((event) => {
+    const direction = event.detail;
+    const rotate = () => {
+      const rotationSpeed = 0.005;
+      if (direction === 'left') {
+        camera.position.x = camera.position.x * Math.cos(rotationSpeed) + camera.position.z * Math.sin(rotationSpeed);
+        camera.position.z = camera.position.z * Math.cos(rotationSpeed) - camera.position.x * Math.sin(rotationSpeed);
+      } else if (direction === 'right') {
+        camera.position.x = camera.position.x * Math.cos(-rotationSpeed) + camera.position.z * Math.sin(-rotationSpeed);
+        camera.position.z = camera.position.z * Math.cos(-rotationSpeed) - camera.position.x * Math.sin(-rotationSpeed);
+      }
+      requestAnimationFrame(rotate);
+    };
+    rotate();
   }, []);
 
-  const handleRotateVertical = useCallback((event) => {
-    const value = event.detail;
-    const radians = (value / 180) * Math.PI;
-    if (controlsRef.current) {
-      controlsRef.current.setPolarAngle(radians);
-      controlsRef.current.update();
-    }
+  const handleStopRotate = useCallback(() => {
+    controlsRef.current.dispatchEvent({ type: 'end' });
   }, []);
 
-  const handleZoom = useCallback((event) => {
-    const zoomValue = event.detail;
-    camera.zoom = zoomValue;
-    camera.updateProjectionMatrix();
-  }, [camera]);
+  // Placeholder functions to resolve ESLint errors
+  const handleStartRotateMouse = useCallback(() => { }, []);
+  const handleStopRotateMouse = useCallback(() => { }, []);
+  const handleStartRotateUp = useCallback(() => { }, []);
+  const handleStopRotateUp = useCallback(() => { }, []);
 
   useEffect(() => {
-    window.addEventListener('rotateHorizontal', handleRotateHorizontal);
-    window.addEventListener('rotateVertical', handleRotateVertical);
-    window.addEventListener('zoom', handleZoom);
+    window.addEventListener('startRotate', handleStartRotate);
+    window.addEventListener('stopRotate', handleStopRotate);
+    window.addEventListener('startRotateMouse', handleStartRotateMouse);
+    window.addEventListener('stopRotateMouse', handleStopRotateMouse);
+    window.addEventListener('startRotateUp', handleStartRotateUp);
+    window.addEventListener('stopRotateUp', handleStopRotateUp);
 
     return () => {
-      window.removeEventListener('rotateHorizontal', handleRotateHorizontal);
-      window.removeEventListener('rotateVertical', handleRotateVertical);
-      window.removeEventListener('zoom', handleZoom);
+      window.removeEventListener('startRotate', handleStartRotate);
+      window.removeEventListener('stopRotate', handleStopRotate);
+      window.removeEventListener('startRotateMouse', handleStartRotateMouse);
+      window.removeEventListener('stopRotateMouse', handleStopRotateMouse);
+      window.removeEventListener('startRotateUp', handleStartRotateUp);
+      window.removeEventListener('stopRotateUp', handleStopRotateUp);
     };
-  }, [handleRotateHorizontal, handleRotateVertical, handleZoom]);
+  }, [handleStartRotate, handleStopRotate, handleStartRotateMouse, handleStopRotateMouse, handleStartRotateUp, handleStopRotateUp]);
 
   return <OrbitControls ref={controlsRef} enableRotate={true} enableZoom={true} args={[camera, gl.domElement]} />;
 }
