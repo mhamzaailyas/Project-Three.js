@@ -66,7 +66,7 @@ function CameraControls() {
 
   const handleRotateHorizontal = useCallback((event) => {
     const value = event.detail;
-    const radians = (value / 180) * Math.PI;
+    const radians = (value / 360) * Math.PI;
     if (controlsRef.current) {
       controlsRef.current.setAzimuthalAngle(radians);
       controlsRef.current.update();
