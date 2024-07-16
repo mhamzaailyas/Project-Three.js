@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
+import * as THREE from 'three';
 import './App.css';
 
 export default function App() {
@@ -13,39 +14,12 @@ export default function App() {
         <CameraControls />
         <Environment preset="sunset" />
       </Canvas>
-      <div className="scrollbar-container">
-        <div className="scrollbar-wrapper">
-          <label className="scrollbar-label">Horizontal Rotation</label>
-          <input
-            type="range"
-            className="scrollbar horizontal"
-            min="0"
-            max="360"
-            onChange={(e) => window.dispatchEvent(new CustomEvent('rotateHorizontal', { detail: e.target.value }))}
-          />
-        </div>
-        <div className="scrollbar-wrapper">
-          <label className="scrollbar-label">Vertical Rotation</label>
-          <input
-            type="range"
-            className="scrollbar vertical"
-            min="0"
-            max="360"
-            onChange={(e) => window.dispatchEvent(new CustomEvent('rotateVertical', { detail: e.target.value }))}
-          />
-        </div>
-        <div className="scrollbar-wrapper">
-          <label className="scrollbar-label">Zoom</label>
-          <input
-            type="range"
-            className="scrollbar zoom"
-            min="1"
-            max="10"
-            step="0.1"
-            defaultValue="1"
-            onChange={(e) => window.dispatchEvent(new CustomEvent('zoom', { detail: parseFloat(e.target.value) }))}
-          />
-        </div>
+      <div className="button-container">
+        <button className="rotate-button" onMouseDown={() => window.dispatchEvent(new CustomEvent('startRotate', { detail: 'left' }))} onMouseUp={() => window.dispatchEvent(new CustomEvent('stopRotate'))}>Rotate Left</button>
+        <button className="rotate-button" onMouseDown={() => window.dispatchEvent(new CustomEvent('startRotate', { detail: 'right' }))} onMouseUp={() => window.dispatchEvent(new CustomEvent('stopRotate'))}>Rotate Right</button>
+        <button className="rotate-button" onMouseDown={() => window.dispatchEvent(new CustomEvent('startRotate', { detail: 'up' }))} onMouseUp={() => window.dispatchEvent(new CustomEvent('stopRotate'))}>Rotate Up</button>
+        <button className="rotate-button" onMouseDown={() => window.dispatchEvent(new CustomEvent('startRotate', { detail: 'down' }))} onMouseUp={() => window.dispatchEvent(new CustomEvent('stopRotate'))}>Rotate Down</button>
+        <button className="rotate-button" onMouseDown={() => window.dispatchEvent(new CustomEvent('startRotate360'))} onMouseUp={() => window.dispatchEvent(new CustomEvent('stopRotate360'))}>Rotate 360</button>
       </div>
     </div>
   );
@@ -63,42 +37,101 @@ function Sphere(props) {
 function CameraControls() {
   const { camera, gl } = useThree();
   const controlsRef = useRef();
+  const [isRotating, setIsRotating] = useState(false);
+  const [direction, setDirection] = useState(null);
+  const frameId = useRef(null);
 
-  const handleRotateHorizontal = useCallback((event) => {
-    const value = event.detail;
-    const radians = (value / 180) * Math.PI;
-    if (controlsRef.current) {
-      controlsRef.current.setAzimuthalAngle(radians);
-      controlsRef.current.update();
+  const rotate = () => {
+    const rotationSpeed = 0.02; // Adjust the speed as needed
+    const target = controlsRef.current.target.clone(); // OrbitControls target
+
+    if (direction === 'left') {
+      camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationSpeed);
+    } else if (direction === 'right') {
+      camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotationSpeed);
+    } else if (direction === 'up') {
+      const axis = new THREE.Vector3().subVectors(camera.position, target).cross(camera.up).normalize();
+      const newPos = camera.position.clone().applyAxisAngle(axis, rotationSpeed);
+      if (newPos.y < 10 && newPos.y > -10) { // Adjust limits as needed
+        camera.position.copy(newPos);
+      } else {
+        stopRotate();
+      }
+    } else if (direction === 'down') {
+      const axis = new THREE.Vector3().subVectors(camera.position, target).cross(camera.up).normalize();
+      const newPos = camera.position.clone().applyAxisAngle(axis, -rotationSpeed);
+      if (newPos.y < 10 && newPos.y > -10) { // Adjust limits as needed
+        camera.position.copy(newPos);
+      } else {
+        stopRotate();
+      }
     }
+
+    camera.lookAt(target);
+    controlsRef.current.update();
+  };
+
+  const startRotate = useCallback((event) => {
+    setDirection(event.detail);
+    setIsRotating(true);
   }, []);
 
-  const handleRotateVertical = useCallback((event) => {
-    const value = event.detail;
-    const radians = (value / 180) * Math.PI;
-    if (controlsRef.current) {
-      controlsRef.current.setPolarAngle(radians);
-      controlsRef.current.update();
-    }
+  const stopRotate = useCallback(() => {
+    setIsRotating(false);
+    setDirection(null);
   }, []);
 
-  const handleZoom = useCallback((event) => {
-    const zoomValue = event.detail;
-    camera.zoom = zoomValue;
-    camera.updateProjectionMatrix();
+  const handleRotate360 = useCallback(() => {
+    const rotationSpeed = 0.02; // Adjust the speed as needed
+    camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationSpeed);
+    controlsRef.current.update();
+    frameId.current = requestAnimationFrame(handleRotate360);
   }, [camera]);
 
+  const stopRotate360 = useCallback(() => {
+    cancelAnimationFrame(frameId.current);
+    frameId.current = null;
+  }, []);
+
   useEffect(() => {
-    window.addEventListener('rotateHorizontal', handleRotateHorizontal);
-    window.addEventListener('rotateVertical', handleRotateVertical);
-    window.addEventListener('zoom', handleZoom);
+    if (isRotating) {
+      const rotateFn = () => {
+        rotate();
+        frameId.current = requestAnimationFrame(rotateFn);
+      };
+      frameId.current = requestAnimationFrame(rotateFn);
+    } else {
+      cancelAnimationFrame(frameId.current);
+      frameId.current = null;
+    }
+  }, [isRotating, direction]);
+
+  useEffect(() => {
+    window.addEventListener('startRotate', startRotate);
+    window.addEventListener('stopRotate', stopRotate);
+    window.addEventListener('startRotate360', handleRotate360);
+    window.addEventListener('stopRotate360', stopRotate360);
 
     return () => {
-      window.removeEventListener('rotateHorizontal', handleRotateHorizontal);
-      window.removeEventListener('rotateVertical', handleRotateVertical);
-      window.removeEventListener('zoom', handleZoom);
+      window.removeEventListener('startRotate', startRotate);
+      window.removeEventListener('stopRotate', stopRotate);
+      window.removeEventListener('startRotate360', handleRotate360);
+      window.removeEventListener('stopRotate360', stopRotate360);
     };
-  }, [handleRotateHorizontal, handleRotateVertical, handleZoom]);
+  }, [startRotate, stopRotate, handleRotate360, stopRotate360]);
 
-  return <OrbitControls ref={controlsRef} enableRotate={true} enableZoom={true} args={[camera, gl.domElement]} />;
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      enableRotate={true}
+      enableZoom={false}
+      enablePan={false}
+      minPolarAngle={0}
+      maxPolarAngle={Math.PI}
+      onPointerDown={() => {
+        setIsRotating(false);
+      }}
+      args={[camera, gl.domElement]}
+    />
+  );
 }

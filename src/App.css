@@ -7,36 +7,19 @@
     align-items: center;
 }
 
-.scrollbar-container {
+.button-container {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
     pointer-events: none;
-    flex-direction: column;
-    gap: 10px;
 }
 
-.scrollbar-wrapper {
-    display: flex;
-    align-items: center;
+.rotate-button {
     pointer-events: all;
-    gap: 10px;
-}
-
-.scrollbar-label {
-    color: white;
-}
-
-.scrollbar {
-    pointer-events: all;
-}
-
-.scrollbar.horizontal,
-.scrollbar.vertical,
-.scrollbar.zoom {
-    width: 200px;
+    margin: 0 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
 }
